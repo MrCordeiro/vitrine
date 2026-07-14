@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+
+# Capture/frame output
+screenshots/
+
+# Play publishing credentials (never commit)
+secrets/
+
+# npm pack tarballs
+*.tgz
+
+# OS / editor noise
+.DS_Store
+*.log

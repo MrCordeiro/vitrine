@@ -1,0 +1,8 @@
+appId: com.example.myapp
+---
+# Navigate to the Profile screen and capture it.
+- launchApp:
+    clearState: true
+- tapOn: "Profile"
+- assertVisible: "Your data, your way"
+- takeScreenshot: profile

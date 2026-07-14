@@ -1,0 +1,9 @@
+appId: com.example.myapp
+---
+# Reach the Home screen in a known-good state, then capture it.
+- launchApp:
+    clearState: true
+# assertVisible is a readiness gate: wait until the screen has settled.
+- assertVisible: "Home"
+# takeScreenshot name MUST match the screen id in screenshots.config.ts.
+- takeScreenshot: home
