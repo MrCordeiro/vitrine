@@ -1,0 +1,11 @@
+appId: com.example.myapp
+---
+# Home is the initial Expo Router route (app/index.tsx or app/(tabs)/index.tsx),
+# so launching lands here directly — no deep link needed. For any other screen,
+# prefer `openLink: myapp://<route>` (see profile.yaml / settings.yaml).
+- launchApp:
+    clearState: true
+# assertVisible is a readiness gate: wait until the screen has settled.
+- assertVisible: "Home"
+# takeScreenshot name MUST match the screen id in screenshots.config.ts.
+- takeScreenshot: home

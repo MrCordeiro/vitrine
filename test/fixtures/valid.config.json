@@ -1,0 +1,19 @@
+{
+  "app": {
+    "packageName": "com.example.myapp",
+    "apkPath": "./builds/app-release.apk"
+  },
+  "device": {
+    "avd": "Pixel_7_API_34"
+  },
+  "frame": {
+    "background": ["#1a1a2e", "#16213e"]
+  },
+  "publish": {
+    "serviceAccountKeyPath": "./secrets/play-service-account.json"
+  },
+  "screens": [
+    { "id": "home", "flow": "flows/home.yaml", "caption": "Home caption" },
+    { "id": "profile", "flow": "flows/profile.yaml" }
+  ]
+}

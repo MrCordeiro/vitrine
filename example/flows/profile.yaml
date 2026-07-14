@@ -1,0 +1,27 @@
+appId: com.example.myapp
+---
+# Expo Router: deep-link straight to the route instead of tapping through the UI.
+# This is deterministic and survives navigation refactors — preferred for capture.
+# Route: app/(tabs)/profile.tsx  ->  myapp://profile  (the "(tabs)" group is
+# omitted from the URL). The scheme comes from your app.json `expo.scheme`.
+- launchApp:
+    clearState: true
+- openLink: myapp://profile
+# extendedWaitUntil is a readiness gate that waits (instead of failing instantly)
+# for async screens to settle before capturing.
+- extendedWaitUntil:
+    visible: "Your data, your way"
+    timeout: 10000
+# takeScreenshot name MUST match the screen id in screenshots.config.ts.
+- takeScreenshot: profile
+#
+# UI-driven fallback (use when a screen isn't directly routable, e.g. behind a
+# modal or bottom sheet). Prefer a testID over visible text — text selectors
+# break with copy changes and localization:
+#
+#   - launchApp:
+#       clearState: true
+#   - tapOn:
+#       id: "tab-profile"     # React Native testID on the pressable
+#   - assertVisible: "Your data, your way"
+#   - takeScreenshot: profile

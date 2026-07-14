@@ -1,0 +1,76 @@
+import { z } from "zod";
+
+/** Hex color like `#1a1a2e` or `#fff`. */
+const hexColor = z
+  .string()
+  .regex(
+    /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
+    "must be a hex color such as #1a1a2e or #fff",
+  );
+
+export const frameTemplateSchema = z.enum(["gradient", "solid", "minimal"]);
+export type FrameTemplate = z.infer<typeof frameTemplateSchema>;
+
+export const screenSchema = z.object({
+  /** Stable screen id; must equal the flow's `takeScreenshot` name. */
+  id: z.string().min(1, "screen id must not be empty"),
+  /** Path to the Maestro flow (relative to the config file). */
+  flow: z.string().min(1, "screen flow path must not be empty"),
+  caption: z.string().default(""),
+});
+export type ScreenConfig = z.infer<typeof screenSchema>;
+
+export const configSchema = z.object({
+  app: z.object({
+    packageName: z.string().min(1, "app.packageName is required"),
+    /** Optional; if omitted the app is assumed already installed. */
+    apkPath: z.string().min(1).optional(),
+  }),
+  device: z.object({
+    avd: z.string().min(1, "device.avd is required"),
+    locale: z.string().default("en-US"),
+  }),
+  frame: z.object({
+    template: frameTemplateSchema.default("gradient"),
+    /** Solid color, or a two-stop linear gradient. */
+    background: z.union([hexColor, z.tuple([hexColor, hexColor])]),
+    textColor: hexColor.default("#ffffff"),
+    font: z.string().default("Inter"),
+  }),
+  publish: z.object({
+    serviceAccountKeyPath: z
+      .string()
+      .min(1, "publish.serviceAccountKeyPath is required"),
+    /** Images only today; reserved for clarity. */
+    track: z.string().default("listing"),
+  }),
+  screens: z
+    .array(screenSchema)
+    .min(1, "at least one screen is required")
+    .superRefine((screens, ctx) => {
+      const seen = new Set<string>();
+      screens.forEach((screen, index) => {
+        if (seen.has(screen.id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `duplicate screen id "${screen.id}"`,
+            path: [index, "id"],
+          });
+        }
+        seen.add(screen.id);
+      });
+    }),
+});
+
+/** Author-facing shape (defaults optional). */
+export type ConfigInput = z.input<typeof configSchema>;
+/** Validated, fully-defaulted config the CLI operates on. */
+export type Config = z.output<typeof configSchema>;
+
+/**
+ * Identity helper that gives editor autocompletion / type-checking to a
+ * `screenshots.config.ts`. Validation happens at load time via {@link configSchema}.
+ */
+export function defineConfig(config: ConfigInput): ConfigInput {
+  return config;
+}
