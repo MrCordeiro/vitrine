@@ -2,8 +2,8 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { createJiti } from "jiti";
-import { z } from "zod";
-import { configSchema, type Config } from "./schema.js";
+import type { z } from "zod";
+import { type Config, configSchema } from "./schema.js";
 
 const DEFAULT_BASENAMES = [
   "screenshots.config.ts",
@@ -46,9 +46,14 @@ export async function loadConfig(
   };
 }
 
-function resolveConfigPath(explicitPath: string | undefined, cwd: string): string {
+function resolveConfigPath(
+  explicitPath: string | undefined,
+  cwd: string,
+): string {
   if (explicitPath) {
-    const abs = isAbsolute(explicitPath) ? explicitPath : resolve(cwd, explicitPath);
+    const abs = isAbsolute(explicitPath)
+      ? explicitPath
+      : resolve(cwd, explicitPath);
     if (!existsSync(abs)) {
       throw new Error(`Config file not found: ${abs}`);
     }
@@ -99,7 +104,10 @@ function withResolvedPaths(config: Config, configDir: string): Config {
 }
 
 /** Turn a ZodError into a readable, multi-line message. */
-export function formatConfigError(error: z.ZodError, configPath: string): string {
+export function formatConfigError(
+  error: z.ZodError,
+  configPath: string,
+): string {
   const lines = error.issues.map((issue) => {
     const path = issue.path.length ? issue.path.join(".") : "(root)";
     return `  • ${path}: ${issue.message}`;

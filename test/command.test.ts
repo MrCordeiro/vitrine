@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { selectScreens } from "../src/capture/command.js";
 import type { ScreenConfig } from "../src/config/schema.js";
 
@@ -24,6 +24,8 @@ describe("selectScreens", () => {
   });
 
   it("throws on an unknown id", () => {
-    expect(() => selectScreens(screens, "home,nope")).toThrow(/Unknown screen id/);
+    expect(() => selectScreens(screens, "home,nope")).toThrow(
+      /Unknown screen id/,
+    );
   });
 });

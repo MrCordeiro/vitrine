@@ -164,10 +164,15 @@ it never triggers a production build.
 
 ```bash
 npm install
-npm run build       # tsup → dist/ (ESM + .d.ts + bin)
+npm run lint        # biome (lint + format check)
+npm run format      # biome --write (apply fixes)
 npm run typecheck   # tsc --noEmit
 npm test            # vitest
+npm run build       # tsup → dist/ (ESM + .d.ts + bin)
 ```
+
+CI (GitHub Actions) runs lint, typecheck, tests, and build on Node 20 and 22
+for every push to `main` and every pull request.
 
 ## License
 

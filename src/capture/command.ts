@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import { loadConfig } from "../config/load.js";
 import type { Config, ScreenConfig } from "../config/schema.js";
 import { assertToolInstalled } from "../util/exec.js";
-import { printSummary, type CaptureResult } from "../util/report.js";
+import { type CaptureResult, printSummary } from "../util/report.js";
 import { ensureApp, resolveDevice } from "./device.js";
 import { runFlow } from "./maestro.js";
 

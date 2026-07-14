@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parseAdbDevices } from "../src/capture/device.js";
 
 describe("parseAdbDevices", () => {

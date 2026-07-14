@@ -1,8 +1,8 @@
-import { fileURLToPath } from "node:url";
 import { dirname, isAbsolute, join } from "node:path";
-import { describe, it, expect } from "vitest";
-import { configSchema } from "../src/config/schema.js";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
 import { loadConfig } from "../src/config/load.js";
+import { configSchema } from "../src/config/schema.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(here, "fixtures");
@@ -27,7 +27,10 @@ describe("configSchema", () => {
   });
 
   it("accepts a solid background color", () => {
-    const parsed = configSchema.parse({ ...base, frame: { background: "#101010" } });
+    const parsed = configSchema.parse({
+      ...base,
+      frame: { background: "#101010" },
+    });
     expect(parsed.frame.background).toBe("#101010");
   });
 
@@ -49,7 +52,10 @@ describe("configSchema", () => {
   });
 
   it("rejects a malformed background color", () => {
-    const result = configSchema.safeParse({ ...base, frame: { background: "blue" } });
+    const result = configSchema.safeParse({
+      ...base,
+      frame: { background: "blue" },
+    });
     expect(result.success).toBe(false);
   });
 
@@ -67,20 +73,26 @@ describe("configSchema", () => {
       ],
     });
     expect(result.success).toBe(false);
-    expect(result.success ? "" : result.error.issues.map((i) => i.message).join()).toMatch(
-      /duplicate screen id "home"/,
-    );
+    expect(
+      result.success ? "" : result.error.issues.map((i) => i.message).join(),
+    ).toMatch(/duplicate screen id "home"/);
   });
 });
 
 describe("loadConfig", () => {
   it("loads and validates a JSON config, resolving paths to absolute", async () => {
-    const { config, configPath } = await loadConfig(join(fixtures, "valid.config.json"));
+    const { config, configPath } = await loadConfig(
+      join(fixtures, "valid.config.json"),
+    );
     expect(config.app.packageName).toBe("com.example.myapp");
     expect(config.device.locale).toBe("en-US"); // default applied
-    expect(isAbsolute(config.screens[0]!.flow)).toBe(true);
-    expect(config.screens[0]!.flow).toBe(join(fixtures, "flows/home.yaml"));
-    expect(isAbsolute(config.app.apkPath!)).toBe(true);
+
+    const [home] = config.screens;
+    expect(home?.flow).toBe(join(fixtures, "flows/home.yaml"));
+    expect(isAbsolute(home?.flow ?? "")).toBe(true);
+
+    const { apkPath } = config.app;
+    expect(apkPath && isAbsolute(apkPath)).toBeTruthy();
     expect(isAbsolute(config.publish.serviceAccountKeyPath)).toBe(true);
     expect(configPath).toBe(join(fixtures, "valid.config.json"));
   });
@@ -93,8 +105,8 @@ describe("loadConfig", () => {
   });
 
   it("throws a readable error for a missing config file", async () => {
-    await expect(loadConfig(join(fixtures, "does-not-exist.ts"))).rejects.toThrow(
-      /Config file not found/,
-    );
+    await expect(
+      loadConfig(join(fixtures, "does-not-exist.ts")),
+    ).rejects.toThrow(/Config file not found/);
   });
 });

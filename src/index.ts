@@ -1,4 +1,8 @@
-export { defineConfig, configSchema, frameTemplateSchema } from "./config/schema.js";
+export {
+  defineConfig,
+  configSchema,
+  frameTemplateSchema,
+} from "./config/schema.js";
 export type {
   Config,
   ConfigInput,

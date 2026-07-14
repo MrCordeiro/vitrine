@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  extractScreenshotNames,
   assertFlowConvention,
+  extractScreenshotNames,
 } from "../src/capture/maestro.js";
 import type { ScreenConfig } from "../src/config/schema.js";
 
@@ -49,7 +49,9 @@ describe("assertFlowConvention", () => {
 
   it("throws when the flow has no takeScreenshot", () => {
     const flow = "appId: x\n---\n- assertVisible: Home";
-    expect(() => assertFlowConvention(flow, screen())).toThrow(/no takeScreenshot/);
+    expect(() => assertFlowConvention(flow, screen())).toThrow(
+      /no takeScreenshot/,
+    );
   });
 
   it("throws when the name does not match the id", () => {
@@ -66,7 +68,9 @@ vi.mock("node:fs/promises", () => ({
   readFile: vi.fn(async () => "appId: x\n---\n- takeScreenshot: home"),
   mkdir: vi.fn(async () => undefined),
 }));
-vi.mock("../src/util/exec.js", () => ({ run: vi.fn(async () => ({ stdout: "" })) }));
+vi.mock("../src/util/exec.js", () => ({
+  run: vi.fn(async () => ({ stdout: "" })),
+}));
 
 describe("runFlow", () => {
   beforeEach(() => {
@@ -77,7 +81,10 @@ describe("runFlow", () => {
     const { runFlow } = await import("../src/capture/maestro.js");
     const { run } = await import("../src/util/exec.js");
 
-    const out = await runFlow(screen(), { rawDir: "/tmp/raw", serial: "emulator-5554" });
+    const out = await runFlow(screen(), {
+      rawDir: "/tmp/raw",
+      serial: "emulator-5554",
+    });
 
     expect(out).toBe("/tmp/raw/home.png");
     expect(run).toHaveBeenCalledWith(

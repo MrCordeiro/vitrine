@@ -2,8 +2,8 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseAllDocuments } from "yaml";
-import { run } from "../util/exec.js";
 import type { ScreenConfig } from "../config/schema.js";
+import { run } from "../util/exec.js";
 
 /**
  * Extract every `takeScreenshot` name from a Maestro flow's text. Handles both
@@ -52,11 +52,9 @@ export function assertFlowConvention(
     );
   }
   if (!names.includes(screen.id)) {
+    const found = names.join(", ");
     throw new Error(
-      `Flow "${screen.flow}" takes screenshot(s) named [${names.join(
-        ", ",
-      )}] but screen id is "${screen.id}". ` +
-        `The takeScreenshot name must match the screen id.`,
+      `Flow "${screen.flow}" takes screenshot(s) named [${found}] but screen id is "${screen.id}". The takeScreenshot name must match the screen id.`,
     );
   }
 }
@@ -84,11 +82,10 @@ export async function runFlow(
 
   await mkdir(options.rawDir, { recursive: true });
 
-  await run(
-    "maestro",
-    ["--device", options.serial, "test", screen.flow],
-    { cwd: options.rawDir, stdio: "inherit" },
-  );
+  await run("maestro", ["--device", options.serial, "test", screen.flow], {
+    cwd: options.rawDir,
+    stdio: "inherit",
+  });
 
   const output = join(options.rawDir, `${screen.id}.png`);
   if (!existsSync(output)) {

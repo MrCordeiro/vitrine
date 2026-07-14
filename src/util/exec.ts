@@ -1,4 +1,4 @@
-import { execa, type Options } from "execa";
+import { type Options, execa } from "execa";
 
 export interface RunResult {
   stdout: string;
@@ -33,7 +33,9 @@ export async function assertToolInstalled(
   args?: string[],
 ): Promise<void> {
   if (!(await isToolInstalled(command, args))) {
-    throw new Error(`Required tool "${command}" was not found on PATH.\n  ${hint}`);
+    throw new Error(
+      `Required tool "${command}" was not found on PATH.\n  ${hint}`,
+    );
   }
 }
 
@@ -68,10 +70,11 @@ export async function waitFor(
   { timeoutMs, intervalMs }: { timeoutMs: number; intervalMs: number },
 ): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    if (await check()) return true;
+  let ok = await check();
+  while (!ok) {
     if (Date.now() >= deadline) return false;
     await delay(intervalMs);
+    ok = await check();
   }
+  return true;
 }

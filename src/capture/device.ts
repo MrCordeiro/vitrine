@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { execa } from "execa";
-import { assertToolInstalled, delay, run, waitFor } from "../util/exec.js";
 import type { Config } from "../config/schema.js";
+import { assertToolInstalled, delay, run, waitFor } from "../util/exec.js";
 
 const BOOT_TIMEOUT_MS = 180_000;
 const BOOT_POLL_MS = 2_000;
@@ -65,7 +65,13 @@ export async function resolveDevice(options: {
         `Device "${options.serial}" not found. Connected devices: ${available}.`,
       );
     }
+    if (match.state === "unauthorized") {
+      throw new Error(
+        `Device "${options.serial}" is unauthorized. Accept the "Allow USB debugging" prompt on the device (or revoke USB debugging authorizations and reconnect), then retry.`,
+      );
+    }
     if (match.state !== "device") {
+      // e.g. "offline"/"booting" — wait for it to come up.
       await waitForBoot(options.serial);
     }
     return options.serial;
@@ -96,10 +102,14 @@ async function bootAvd(avd: string): Promise<string> {
   const before = new Set((await listDevices()).map((d) => d.serial));
 
   // Detach so the emulator keeps running for the whole capture session.
+  // reject:false + an explicit catch prevent an unhandled rejection if the
+  // detached process later exits non-zero (we track readiness via adb instead).
   const child = execa(emulatorBin, ["-avd", avd, "-no-snapshot-save"], {
     detached: true,
     stdio: "ignore",
+    reject: false,
   });
+  child.catch(() => undefined);
   child.unref();
 
   // Wait for a new emulator serial to appear.
@@ -144,7 +154,9 @@ async function waitForBoot(serial: string): Promise<void> {
   );
 
   if (!booted) {
-    throw new Error(`Timed out waiting for device "${serial}" to finish booting.`);
+    throw new Error(
+      `Timed out waiting for device "${serial}" to finish booting.`,
+    );
   }
 
   // Small settle delay after boot completes.
@@ -189,8 +201,7 @@ export async function ensureApp(
 
   if (!installed) {
     throw new Error(
-      `Package "${app.packageName}" is not installed on ${serial}. ` +
-        "Install your dev client / APK first, or set app.apkPath in the config.",
+      `Package "${app.packageName}" is not installed on ${serial}. Install your dev client / APK first, or set app.apkPath in the config.`,
     );
   }
 }

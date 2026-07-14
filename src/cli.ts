@@ -11,7 +11,9 @@ program
 
 program
   .command("capture")
-  .description("Capture raw screenshots by running Maestro flows in config order.")
+  .description(
+    "Capture raw screenshots by running Maestro flows in config order.",
+  )
   .option("-c, --config <path>", "path to the config file")
   .option("--only <ids>", "comma-separated screen ids to capture a subset")
   .option("--serial <device>", "target a specific adb device/emulator serial")
@@ -26,4 +28,9 @@ program
     }
   });
 
-program.parseAsync(process.argv);
+program.parseAsync(process.argv).catch((error) => {
+  process.stderr.write(
+    `\n✗ ${error instanceof Error ? error.message : String(error)}\n`,
+  );
+  process.exitCode = 1;
+});
