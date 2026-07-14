@@ -30,5 +30,10 @@ export default defineConfig({
       flow: "flows/profile.yaml",
       caption: "Your data, your way",
     },
+    {
+      id: "settings",
+      flow: "flows/settings.yaml",
+      caption: "Make it yours",
+    },
   ],
 });

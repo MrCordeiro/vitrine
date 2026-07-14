@@ -1,6 +1,8 @@
 appId: com.example.myapp
 ---
-# Reach the Home screen in a known-good state, then capture it.
+# Home is the initial Expo Router route (app/index.tsx or app/(tabs)/index.tsx),
+# so launching lands here directly — no deep link needed. For any other screen,
+# prefer `openLink: myapp://<route>` (see profile.yaml / settings.yaml).
 - launchApp:
     clearState: true
 # assertVisible is a readiness gate: wait until the screen has settled.

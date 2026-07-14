@@ -92,6 +92,52 @@ appId: com.example.myapp
 - takeScreenshot: home    # name === screen id
 ```
 
+### Expo Router: deep-link to screens
+
+If your app uses [Expo Router](https://docs.expo.dev/router/introduction/),
+every route is a URL. Deep-linking straight to a screen is more deterministic
+than tapping through the UI and survives navigation refactors — prefer it.
+
+Set a scheme in `app.json` (`{ "expo": { "scheme": "myapp" } }`); Expo Router
+derives link paths from your file routes:
+
+| Route file | Deep link |
+|---|---|
+| `app/index.tsx` | `myapp://` |
+| `app/(tabs)/home.tsx` | `myapp://home`  *(the `(tabs)` group is omitted)* |
+| `app/settings/account.tsx` | `myapp://settings/account` |
+| `app/user/[id].tsx` | `myapp://user/42` |
+| `app/search.tsx` | `myapp://search?q=trees` |
+
+```yaml
+# flows/profile.yaml — reach the route directly, then capture
+appId: com.example.myapp
+---
+- launchApp:
+    clearState: true
+- openLink: myapp://profile
+- extendedWaitUntil:        # waits for async screens (vs. failing instantly)
+    visible: "Your data, your way"
+    timeout: 10000
+- takeScreenshot: profile
+```
+
+Notes:
+
+- A **dev-client** build registers the custom scheme, so `myapp://…` works
+  against the installed build (Expo Go uses `exp://` and is not the target here).
+  Sanity-check once with:
+  `adb shell am start -a android.intent.action.VIEW -d "myapp://profile" com.example.myapp`
+- Pass ids/params through the URL (`myapp://user/42`) to seed stable demo data,
+  so re-runs are visually identical — this feeds the golden-image pipeline.
+- For screens that aren't directly routable (modals, bottom sheets), fall back to
+  `tapOn: { id: "your-testID" }`. Prefer `testID` selectors over visible text.
+- Add `waitForAnimationToEnd` before `takeScreenshot` if a screen animates in, so
+  captures are pixel-stable.
+
+See `example/flows/` for deep-link (`profile.yaml`), nested-route (`settings.yaml`),
+and launch-based (`home.yaml`) variants.
+
 ## Capture
 
 ```bash
