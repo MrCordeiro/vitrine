@@ -19,11 +19,11 @@
   },
   "files": ["dist"],
   "engines": {
-    "node": ">=20"
+    "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "format": "biome check --write .",
@@ -40,9 +40,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@types/node": "^20.17.10",
-    "tsup": "^8.3.5",
+    "@types/node": "^20.19.43",
+    "tsdown": "^0.22.9",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "unrun": "^0.3.1",
+    "vitest": "^4.1.10"
   }
 }
