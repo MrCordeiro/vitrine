@@ -1,9 +1,9 @@
 import { defineConfig } from "tsdown";
 
-// Plain ESM (not .ts) on purpose: tsdown loads a .ts config through the
-// optional `unrun` peer dep or native TS stripping, neither of which is
-// guaranteed on every supported Node (e.g. Node 20.19 in CI). A .mjs config is
-// imported natively everywhere, so no extra dependency is needed.
+// tsdown loads its config (any extension) through `unrun`, its optional peer
+// dep. It's absent under `npm ci` unless declared, so `unrun` is an explicit
+// devDependency — without it CI fails with `Failed to import module "unrun"`
+// on Nodes lacking native TS stripping (e.g. Node 20.19).
 export default defineConfig({
   entry: ["src/index.ts", "src/cli.ts"],
   format: "esm",
