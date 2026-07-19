@@ -48,7 +48,7 @@ Maestro is normally used as an E2E **testing** tool (`maestro test .maestro/`, p
 - **Flows are not tests.** Each flow's job is to reach one screen in a known-good state and call `takeScreenshot` once. Assertions (`assertVisible`) are used as *readiness gates* before capturing (wait until UI settled), not as the flow's purpose. A flow "passes" when its screenshot exists.
 - **The CLI orchestrates, not Maestro.** We do not run `maestro test` on a directory. The CLI invokes flows individually, in config order, so it can map outputs to screen ids, support `--only`, and produce a per-screen summary. Config (`screenshots.config.ts`) is the source of truth for *which* flows run — not the filesystem.
 - **Output location is ours.** Screenshots must land in `screenshots/raw/<id>.png` (use `maestro test --output` / working-dir control or move artifacts post-run), never left in Maestro's default artifact directory. The `takeScreenshot` name ↔ screen `id` convention is validated by the CLI.
-- **Determinism over coverage.** Standard Maestro suites tolerate flakiness with retries and test many paths. Here every flow should `clearState`/launch into seeded, stable state (fixed demo data, no relative timestamps or network-dependent content where avoidable) so re-runs produce visually identical screens — this feeds the golden-image pipeline.
+- **Determinism over coverage.** Standard Maestro suites tolerate flakiness with retries and test many paths. Re-runs produce visually identical screens — this feeds the golden-image pipeline.
 - **Device lifecycle is managed by the CLI**, not by the developer or Maestro Cloud: detect running emulator via `adb devices`, boot the configured AVD when absent, install the APK if `apkPath` is set. No Maestro Cloud / hosted execution in v0.
 - **App state, not app build.** Flows run against whatever build is installed (dev client or old APK). Nothing in the Maestro layer may assume a fresh production build.
 
@@ -109,6 +109,7 @@ Convention: each flow's `takeScreenshot` name must match the screen `id`. `captu
 ## Requirements
 
 ### P0 — `capture`
+
 - [ ] Reads and zod-validates config; fails with human-readable errors on invalid config.
 - [ ] Detects a running emulator via `adb devices`; if none, boots the configured AVD and waits for boot completion.
 - [ ] If `apkPath` is set, installs it (`adb install -r`); otherwise verifies the package is installed and errors helpfully if not.
@@ -117,6 +118,7 @@ Convention: each flow's `takeScreenshot` name must match the screen `id`. `captu
 - [ ] Non-zero exit code and a summary table (captured / failed) at the end.
 
 ### P0 — `frame`
+
 - [ ] Composites each `screenshots/raw/<id>.png` into a store-ready image: device bezel overlay, background (solid or 2-stop linear gradient), caption text above the device.
 - [ ] Output: `screenshots/framed/<id>.png` at **1080×1920 (9:16)**, PNG, under Play's 8 MB limit.
 - [ ] Three templates: `gradient` (caption top, device centered-bottom, gradient bg), `solid` (same layout, flat bg), `minimal` (no bezel, subtle shadow, caption top).
@@ -124,6 +126,7 @@ Convention: each flow's `takeScreenshot` name must match the screen `id`. `captu
 - [ ] Idempotent: re-running produces byte-identical output for identical inputs (required for golden tests).
 
 ### P0 — `publish`
+
 - [ ] Auths with a service account key; clear error if key invalid or lacks permissions.
 - [ ] Uses the androidpublisher v3 **edits** flow: `edits.insert` → `edits.images.deleteall` (phoneScreenshots, configured locale) → upload framed images in config order → `edits.validate` → `edits.commit`.
 - [ ] `--dry-run`: performs everything through `edits.validate`, then **deletes the edit instead of committing**. Prints what would change.
@@ -131,12 +134,14 @@ Convention: each flow's `takeScreenshot` name must match the screen `id`. `captu
 - [ ] Prints a link to the Play Console listing page on success.
 
 ### P1
+
 - [ ] `vitrine init` — scaffolds config, `flows/` with one example, `.gitignore` entry for secrets.
 - [ ] `capture --serial <device>` to target a specific device/emulator.
 - [ ] Feature graphic (1024×500) generation from the same frame templates.
 - [ ] Progress/spinner output (`ora` or similar).
 
 ### P2 (design for, don't build)
+
 - iOS capture + App Store Connect publishing.
 - Multi-locale: config `screens[].caption` becomes `Record<locale, string>`; capture loops locales.
 - AI diff-discovery agent that edits config + flows on PRs.

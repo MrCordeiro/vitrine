@@ -10,7 +10,7 @@ no design tool, no fastlane.
 
 ## How it works
 
-```
+```txt
 screenshots.config.ts ──► vitrine capture ──► screenshots/raw/*.png
                           vitrine frame   ──► screenshots/framed/*.png   (soon)
                           vitrine publish ──► Google Play listing        (soon)
@@ -21,7 +21,8 @@ Each command is independently runnable and shares one config file.
 ## Requirements
 
 - Node.js 20+
-- [`maestro`](https://maestro.mobile.dev/getting-started/installing-maestro) on your PATH
+- [`maestro`](https://maestro.mobile.dev/getting-started/installing-maestro) on your
+  PATH — installed separately and requires a Java runtime
 - Android platform-tools (`adb`) on your PATH
 - `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) set if you want vitrine to boot an AVD for you
 
@@ -32,7 +33,7 @@ in your app repo:
 
 ```bash
 # in the vitrine repo
-npm pack                       # produces vitrine-0.1.0.tgz
+npm pack                       # builds dist/ (prepack) and produces vitrine-0.1.0.tgz
 
 # in your app repo
 npm install --save-dev ../vitrine/vitrine-0.1.0.tgz
@@ -196,6 +197,7 @@ Flow gotchas for dev builds:
 - **Gate on a real post-load element with a long timeout** — the first Metro
   bundle load can take 10–60s, so wait on a `testID` that only mounts with your
   app, not splash text:
+
   ```yaml
   - launchApp
   - extendedWaitUntil:
@@ -203,6 +205,7 @@ Flow gotchas for dev builds:
       timeout: 60000
   - takeScreenshot: home
   ```
+
 - If a dev-client build opens the launcher, force-load the bundle instead of
   `launchApp`: `- openLink: "myapp://expo-development-client/?url=http://localhost:8081"`.
 

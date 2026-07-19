@@ -13,4 +13,5 @@ secrets/
 
 # OS / editor noise
 .DS_Store
+.vscode/
 *.log
