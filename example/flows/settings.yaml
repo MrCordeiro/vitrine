@@ -1,17 +1,15 @@
 appId: com.example.myapp
 ---
-# Nested Expo Router route: app/settings/account.tsx  ->  myapp://settings/account
+# Nested Expo Router route: app/settings/account.tsx -> myapp://settings/account
 # Route params work the same way:
 #   app/user/[id].tsx        ->  myapp://user/42
 #   app/search.tsx (?q=...)  ->  myapp://search?q=trees
-# Passing ids/params through the URL is a clean way to seed stable demo data so
-# re-runs produce visually identical screens (feeds the golden-image pipeline).
-- launchApp:
-    clearState: true
+- launchApp
 - openLink: myapp://settings/account
 - extendedWaitUntil:
-    visible: "Account"
-    timeout: 10000
+    visible:
+      id: "settings-screen"
+    timeout: 60000
 # Let entrance animations finish so the capture is pixel-stable.
 - waitForAnimationToEnd
 - takeScreenshot: settings

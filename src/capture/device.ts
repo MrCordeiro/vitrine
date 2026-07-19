@@ -205,3 +205,52 @@ export async function ensureApp(
     );
   }
 }
+
+const METRO_PROBE_TIMEOUT_MS = 3_000;
+
+/**
+ * Forward the host's Metro port onto the device (`adb reverse`) so a dev build
+ * can reach the bundler at localhost. Booting an emulator loses any prior
+ * reverse mapping, so capture re-establishes it every run.
+ */
+export async function setupMetroReverse(
+  serial: string,
+  port: number,
+): Promise<void> {
+  await run("adb", ["-s", serial, "reverse", `tcp:${port}`, `tcp:${port}`]);
+}
+
+/**
+ * Verify Metro is running on the host. Expo / React Native dev builds load
+ * their JS bundle from Metro at runtime; without it the app hangs on the splash
+ * screen and every capture is a splash. Fail loudly instead.
+ */
+export async function assertMetroRunning(port: number): Promise<void> {
+  const url = `http://127.0.0.1:${port}/status`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), METRO_PROBE_TIMEOUT_MS);
+
+  let res: Awaited<ReturnType<typeof fetch>>;
+  try {
+    res = await fetch(url, { signal: controller.signal });
+  } catch {
+    throw new Error(
+      `Metro dev server is not reachable at ${url}. Dev builds load their JS bundle from Metro — start it with \`npx expo start\` and keep it running, then re-run capture. For a standalone release/preview APK that embeds the bundle, set device.devServer to false.`,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!res.ok) {
+    throw new Error(
+      `Got HTTP ${res.status} from ${url}, which doesn't look like Metro — is another process using port ${port}? Stop it (or set device.metroPort), then re-run capture.`,
+    );
+  }
+
+  const body = await res.text();
+  if (!body.includes("packager-status:running")) {
+    throw new Error(
+      `Metro responded at ${url} but is not ready (expected "packager-status:running"). Wait for \`npx expo start\` to finish booting, then re-run capture.`,
+    );
+  }
+}

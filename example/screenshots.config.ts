@@ -8,6 +8,12 @@ export default defineConfig({
   device: {
     avd: "Pixel_7_API_34",
     locale: "en-US",
+    // This build is a Metro-backed dev build (expo run:android / dev client):
+    // capture forwards the Metro port and checks Metro is running first. Keep
+    // `npx expo start` running. Set devServer:false for a standalone
+    // release/preview APK that embeds the JS bundle.
+    devServer: true,
+    metroPort: 8081,
   },
   frame: {
     template: "gradient",

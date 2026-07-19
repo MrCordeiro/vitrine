@@ -51,7 +51,12 @@ export default defineConfig({
     packageName: "com.example.myapp",
     // apkPath: "./builds/app-release.apk", // optional; omit if already installed
   },
-  device: { avd: "Pixel_7_API_34", locale: "en-US" },
+  device: {
+    avd: "Pixel_7_API_34",
+    locale: "en-US",
+    devServer: true, // Metro-backed dev build; false for a standalone APK
+    metroPort: 8081,
+  },
   frame: {
     template: "gradient",
     background: ["#1a1a2e", "#16213e"],
@@ -154,11 +159,56 @@ What it does:
    AVD and waits for boot to complete.
 3. Installs `apkPath` (`adb install -r`) if set, otherwise verifies the package
    is already installed.
-4. Runs each screen's flow in config order, writing `screenshots/raw/<id>.png`.
-5. Prints a summary table and exits non-zero if any screen failed.
+4. For a dev build (`device.devServer: true`), forwards the Metro port with
+   `adb reverse` and verifies Metro is running (see below).
+5. Runs each screen's flow in config order, writing `screenshots/raw/<id>.png`.
+6. Prints a summary table and exits non-zero if any screen failed.
 
-Capture works against **any installed build** (Expo dev client or an old APK) —
-it never triggers a production build.
+Capture works against **any installed build** — never a production build.
+
+## Capturing an Expo dev build (Metro)
+
+This is the primary target: a build from `npx expo prebuild` + `npx expo
+run:android` (or an Expo **dev client**). A dev build is not self-contained — it
+loads its JS bundle from the **Metro** bundler at runtime. If Metro isn't
+reachable, the app hangs on the splash screen and every capture is just the
+splash.
+
+vitrine handles the wiring when `device.devServer` is `true` (the default):
+before capturing it runs `adb reverse tcp:<metroPort> tcp:<metroPort>` so the
+emulator can reach Metro on your host, and it probes `http://127.0.0.1:<metroPort>/status`
+— failing fast with an actionable message if Metro isn't up. You still start
+Metro yourself:
+
+```bash
+# terminal 1 — in your app repo, leave running
+npx expo start            # or: npx expo run:android (builds + starts Metro)
+
+# terminal 2
+npx vitrine capture
+```
+
+Flow gotchas for dev builds:
+
+- **Don't use `launchApp: { clearState: true }`** — on a dev-client build it
+  wipes the saved Metro URL and drops you on the dev launcher/splash. Use a bare
+  `- launchApp`. (Enable `clearState` only for standalone builds, below.)
+- **Gate on a real post-load element with a long timeout** — the first Metro
+  bundle load can take 10–60s, so wait on a `testID` that only mounts with your
+  app, not splash text:
+  ```yaml
+  - launchApp
+  - extendedWaitUntil:
+      visible: { id: "home-screen" }
+      timeout: 60000
+  - takeScreenshot: home
+  ```
+- If a dev-client build opens the launcher, force-load the bundle instead of
+  `launchApp`: `- openLink: "myapp://expo-development-client/?url=http://localhost:8081"`.
+
+**Standalone builds:** for a release/preview APK that embeds the bundle (e.g.
+`expo run:android --variant release`, or an EAS `preview` build), set
+`device.devServer: false` — vitrine then skips the Metro wiring entirely.
 
 ## Development
 
