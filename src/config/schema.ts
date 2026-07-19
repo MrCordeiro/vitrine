@@ -37,7 +37,7 @@ export const configSchema = z.object({
      */
     devServer: z.boolean().default(true),
     /** Metro bundler port (forwarded via `adb reverse`). */
-    metroPort: z.number().int().positive().default(8081),
+    metroPort: z.number().int().min(1).max(65535).default(8081),
   }),
   frame: z.object({
     template: frameTemplateSchema.default("gradient"),

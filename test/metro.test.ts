@@ -31,7 +31,11 @@ describe("assertMetroRunning", () => {
   it("resolves when Metro reports it is running", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({ text: async () => "packager-status:running" })),
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        text: async () => "packager-status:running",
+      })),
     );
     await expect(assertMetroRunning(8081)).resolves.toBeUndefined();
   });
@@ -48,10 +52,22 @@ describe("assertMetroRunning", () => {
     );
   });
 
+  it("throws with the HTTP status when a non-Metro server answers", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 404, text: async () => "" })),
+    );
+    await expect(assertMetroRunning(8081)).rejects.toThrow(/HTTP 404/);
+  });
+
   it("throws when Metro responds but is not ready", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({ text: async () => "starting…" })),
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        text: async () => "starting…",
+      })),
     );
     await expect(assertMetroRunning(8081)).rejects.toThrow(/not ready/);
   });

@@ -176,7 +176,7 @@ splash.
 
 vitrine handles the wiring when `device.devServer` is `true` (the default):
 before capturing it runs `adb reverse tcp:<metroPort> tcp:<metroPort>` so the
-emulator can reach Metro on your host, and it probes `http://localhost:<metroPort>/status`
+emulator can reach Metro on your host, and it probes `http://127.0.0.1:<metroPort>/status`
 — failing fast with an actionable message if Metro isn't up. You still start
 Metro yourself:
 
