@@ -3,7 +3,12 @@ import { loadConfig } from "../config/load.js";
 import type { Config, ScreenConfig } from "../config/schema.js";
 import { assertToolInstalled } from "../util/exec.js";
 import { type CaptureResult, printSummary } from "../util/report.js";
-import { ensureApp, resolveDevice } from "./device.js";
+import {
+  assertMetroRunning,
+  ensureApp,
+  resolveDevice,
+  setupMetroReverse,
+} from "./device.js";
 import { runFlow } from "./maestro.js";
 
 export interface CaptureOptions {
@@ -65,6 +70,13 @@ export async function runCapture(options: CaptureOptions): Promise<number> {
     avd: config.device.avd,
   });
   await ensureApp(config.app, serial);
+
+  // Dev builds load their JS bundle from Metro. Forward the port to the device
+  // and make sure Metro is up, otherwise every capture is just the splash.
+  if (config.device.devServer) {
+    await setupMetroReverse(serial, config.device.metroPort);
+    await assertMetroRunning(config.device.metroPort);
+  }
 
   const rawDir = resolve(options.outDir ?? "screenshots", "raw");
   const results: CaptureResult[] = [];

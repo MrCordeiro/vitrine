@@ -29,6 +29,15 @@ export const configSchema = z.object({
   device: z.object({
     avd: z.string().min(1, "device.avd is required"),
     locale: z.string().default("en-US"),
+    /**
+     * Whether the installed build is a Metro-backed dev build (Expo dev client
+     * or `expo run:android` debug). When true, capture forwards the Metro port
+     * to the device and verifies Metro is running before capturing. Set false
+     * for a standalone release/preview APK that embeds the JS bundle.
+     */
+    devServer: z.boolean().default(true),
+    /** Metro bundler port (forwarded via `adb reverse`). */
+    metroPort: z.number().int().positive().default(8081),
   }),
   frame: z.object({
     template: frameTemplateSchema.default("gradient"),

@@ -1,11 +1,18 @@
 appId: com.example.myapp
 ---
 # Home is the initial Expo Router route (app/index.tsx or app/(tabs)/index.tsx),
-# so launching lands here directly — no deep link needed. For any other screen,
-# prefer `openLink: myapp://<route>` (see profile.yaml / settings.yaml).
-- launchApp:
-    clearState: true
-# assertVisible is a readiness gate: wait until the screen has settled.
-- assertVisible: "Home"
+# so launching lands here once the JS bundle has loaded from Metro.
+#
+# No `clearState`: on an Expo dev / dev-client build it wipes the saved Metro
+# URL and drops you on the dev launcher/splash. Enable `clearState: true` only
+# for a standalone build (device.devServer=false) where you want seeded state.
+- launchApp
+# Gate on a real post-load element — a testID that only exists after JS mounts —
+# with a generous timeout: the first Metro bundle load can take 10–60s, so a
+# short text gate would capture the splash.
+- extendedWaitUntil:
+    visible:
+      id: "home-screen"
+    timeout: 60000
 # takeScreenshot name MUST match the screen id in screenshots.config.ts.
 - takeScreenshot: home

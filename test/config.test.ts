@@ -19,6 +19,8 @@ describe("configSchema", () => {
   it("applies defaults for omitted fields", () => {
     const parsed = configSchema.parse(base);
     expect(parsed.device.locale).toBe("en-US");
+    expect(parsed.device.devServer).toBe(true);
+    expect(parsed.device.metroPort).toBe(8081);
     expect(parsed.frame.template).toBe("gradient");
     expect(parsed.frame.textColor).toBe("#ffffff");
     expect(parsed.frame.font).toBe("Inter");
