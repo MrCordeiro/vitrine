@@ -108,7 +108,7 @@ Set a scheme in `app.json` (`{ "expo": { "scheme": "myapp" } }`); Expo Router
 derives link paths from your file routes:
 
 | Route file | Deep link |
-|---|---|
+| --- | --- |
 | `app/index.tsx` | `myapp://` |
 | `app/(tabs)/home.tsx` | `myapp://home`  *(the `(tabs)` group is omitted)* |
 | `app/settings/account.tsx` | `myapp://settings/account` |
@@ -167,19 +167,13 @@ What it does:
 
 Capture works against **any installed build** — never a production build.
 
-## Capturing an Expo dev build (Metro)
+## Capturing a Metro-backed debug build
 
-This is the primary target: a build from `npx expo prebuild` + `npx expo
-run:android` (or an Expo **dev client**). A dev build is not self-contained — it
-loads its JS bundle from the **Metro** bundler at runtime. If Metro isn't
-reachable, the app hangs on the splash screen and every capture is just the
-splash.
+This is the primary target: any build that loads its JS bundle from the **Metro** bundler at runtime rather than embedding it — a plain `npx expo run:android` debug build, or an Expo **dev client**. Neither is self-contained: if Metro isn't reachable, the app hangs on the splash screen and every capture is just the splash.
 
 vitrine handles the wiring when `device.devServer` is `true` (the default):
 before capturing it runs `adb reverse tcp:<metroPort> tcp:<metroPort>` so the
-emulator can reach Metro on your host, and it probes `http://127.0.0.1:<metroPort>/status`
-— failing fast with an actionable message if Metro isn't up. You still start
-Metro yourself:
+emulator can reach Metro on your host, then forces the app to actually resolve Metro via `localhost` instead of the emulator's default `10.0.2.2` NAT alias — large chunked bundle-download responses can get silently corrupted in transit over that NAT path, hanging the app on the splash screen with no error surfaced. It does this by writing `debug_http_host` directly into the app's own SharedPreferences via `adb shell run-as` (no `adb root` required, so it works against any debuggable build). Finally it probes `http://127.0.0.1:<metroPort>/status` — failing fast with an actionable message if Metro isn't up. You still start Metro yourself:
 
 ```bash
 # terminal 1 — in your app repo, leave running
@@ -189,14 +183,12 @@ npx expo start            # or: npx expo run:android (builds + starts Metro)
 npx vitrine capture
 ```
 
-Flow gotchas for dev builds:
+Flow gotchas for Metro-backed debug builds:
 
 - **Don't use `launchApp: { clearState: true }`** — on a dev-client build it
-  wipes the saved Metro URL and drops you on the dev launcher/splash. Use a bare
-  `- launchApp`. (Enable `clearState` only for standalone builds, below.)
+  wipes the saved Metro URL and drops you on the dev launcher/splash; on a   plain debug build it wipes any onboarding/auth state and drops you on your   app's first-run flow instead of the target screen. Use a bare `- launchApp` and, if your app has onboarding, complete it once manually on   the installed build so state persists across capture runs. (Enable `clearState` only for standalone builds, below.)
 - **Gate on a real post-load element with a long timeout** — the first Metro
-  bundle load can take 10–60s, so wait on a `testID` that only mounts with your
-  app, not splash text:
+  bundle load can take 10–60s, so wait on a `testID` that only mounts with your app, not splash text:
 
   ```yaml
   - launchApp

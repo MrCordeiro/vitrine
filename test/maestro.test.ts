@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   assertFlowConvention,
@@ -81,16 +82,20 @@ describe("runFlow", () => {
     const { runFlow } = await import("../src/capture/maestro.js");
     const { run } = await import("../src/util/exec.js");
 
+    const rawDir = "/tmp/raw";
     const out = await runFlow(screen(), {
-      rawDir: "/tmp/raw",
+      rawDir,
       serial: "emulator-5554",
     });
 
-    expect(out).toBe("/tmp/raw/home.png");
+    // Built via the same platform-native `join` the implementation uses —
+    // path.join's separator is OS-dependent, so a hardcoded POSIX literal
+    // here would fail on Windows even though the implementation is correct.
+    expect(out).toBe(join(rawDir, "home.png"));
     expect(run).toHaveBeenCalledWith(
       "maestro",
       ["--device", "emulator-5554", "test", "flows/home.yaml"],
-      expect.objectContaining({ cwd: "/tmp/raw" }),
+      expect.objectContaining({ cwd: rawDir }),
     );
   });
 

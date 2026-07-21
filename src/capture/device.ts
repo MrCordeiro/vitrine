@@ -220,6 +220,60 @@ export async function setupMetroReverse(
   await run("adb", ["-s", serial, "reverse", `tcp:${port}`, `tcp:${port}`]);
 }
 
+/** Android package names are restricted to this charset by the OS itself. */
+const PACKAGE_NAME_RE = /^[a-zA-Z0-9_.]+$/;
+
+/**
+ * Force a Metro-backed debug build to resolve the bundler via `localhost`
+ * instead of the emulator's default `10.0.2.2` NAT alias. Large chunked
+ * bundle-download responses can get corrupted in transit over that NAT path,
+ * which hangs the app on the splash screen forever with no error surfaced.
+ *
+ * Writes `debug_http_host` directly into the app's own SharedPreferences via
+ * `run-as` — no `adb root` required (unlike the `metro.host` system property
+ * approach), so this works against any debuggable build, not just
+ * rootable emulator images.
+ */
+export async function overrideMetroHost(
+  serial: string,
+  packageName: string,
+  port: number,
+): Promise<void> {
+  if (!PACKAGE_NAME_RE.test(packageName)) {
+    throw new Error(
+      `Invalid app.packageName "${packageName}" — expected an Android package name (letters, digits, "_", "." only).`,
+    );
+  }
+
+  await run("adb", [
+    "-s",
+    serial,
+    "shell",
+    "run-as",
+    packageName,
+    "mkdir",
+    "-p",
+    "shared_prefs",
+  ]);
+
+  const xml = `<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map><string name="debug_http_host">localhost:${port}</string></map>\n`;
+
+  // `adb shell` joins its remaining args with spaces before sending them to
+  // the device's shell, so the `run-as ... sh -c "..."` command must be built
+  // as a single pre-quoted argv entry — otherwise the `>` redirect would be
+  // parsed by the outer `run-as` invocation instead of the inner `sh -c`.
+  await run(
+    "adb",
+    [
+      "-s",
+      serial,
+      "shell",
+      `run-as ${packageName} sh -c "cat > shared_prefs/${packageName}_preferences.xml"`,
+    ],
+    { input: xml },
+  );
+}
+
 /**
  * Verify Metro is running on the host. Expo / React Native dev builds load
  * their JS bundle from Metro at runtime; without it the app hangs on the splash

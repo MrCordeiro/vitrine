@@ -7,7 +7,7 @@ Updating the Google Play listing for our React Native (Expo) Android app is manu
 ## Goals
 
 1. Refresh the entire Play Store screenshot set with a single command run locally.
-2. Capture works against **any installed build** (Expo dev client or the last local APK) — never requires the 30-minute production build.
+2. Capture works against **any installed build** (a plain Metro-backed debug build, an Expo dev client, or the last local APK) — never requires the 30-minute production build.
 3. Framing produces store-compliant, professional images from templates with zero design-tool work.
 4. Publishing updates the live listing via the Play Developer API with a safe dry-run mode.
 5. The package is structured so it can later be published to npm (`npx vitrine ...`) and extended with an AI diff-discovery layer.
@@ -37,7 +37,7 @@ screenshots.config.ts ──► capture ──► screenshots/raw/*.png
 - **Config validation**: `zod` (config is a `.ts` file loaded via `jiti` or `tsx`, exporting a typed object)
 - **Capture**: shells out to `maestro` and `adb` (both assumed installed; fail with actionable error messages if missing)
 - **Framing**: `sharp` for compositing; no headless browser
-- **Publish**: direct Google Play Developer API (androidpublisher v3) via `googleapis`, service-account JSON auth. **No fastlane/Ruby dependency.**
+- **Publish**: direct Google Play Developer API (`adroidpublisher v3`) via `googleapis`, service-account JSON auth.
 
 Each command must be independently runnable and independently useful.
 
@@ -47,7 +47,7 @@ Maestro is normally used as an E2E **testing** tool (`maestro test .maestro/`, p
 
 - **Flows are not tests.** Each flow's job is to reach one screen in a known-good state and call `takeScreenshot` once. Assertions (`assertVisible`) are used as *readiness gates* before capturing (wait until UI settled), not as the flow's purpose. A flow "passes" when its screenshot exists.
 - **The CLI orchestrates, not Maestro.** We do not run `maestro test` on a directory. The CLI invokes flows individually, in config order, so it can map outputs to screen ids, support `--only`, and produce a per-screen summary. Config (`screenshots.config.ts`) is the source of truth for *which* flows run — not the filesystem.
-- **Output location is ours.** Screenshots must land in `screenshots/raw/<id>.png` (use `maestro test --output` / working-dir control or move artifacts post-run), never left in Maestro's default artifact directory. The `takeScreenshot` name ↔ screen `id` convention is validated by the CLI.
+- **Output location is ours.** Screenshots must land in `screenshots/raw/<id>.png` (use `maestro test --output` / `working-dir` control or move artifacts post-run), never left in Maestro's default artifact directory. The `takeScreenshot` name ↔ screen `id` convention is validated by the CLI.
 - **Determinism over coverage.** Standard Maestro suites tolerate flakiness with retries and test many paths. Re-runs produce visually identical screens — this feeds the golden-image pipeline.
 - **Device lifecycle is managed by the CLI**, not by the developer or Maestro Cloud: detect running emulator via `adb devices`, boot the configured AVD when absent, install the APK if `apkPath` is set. No Maestro Cloud / hosted execution in v0.
 - **App state, not app build.** Flows run against whatever build is installed (dev client or old APK). Nothing in the Maestro layer may assume a fresh production build.

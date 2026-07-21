@@ -6,6 +6,7 @@ import { type CaptureResult, printSummary } from "../util/report.js";
 import {
   assertMetroRunning,
   ensureApp,
+  overrideMetroHost,
   resolveDevice,
   setupMetroReverse,
 } from "./device.js";
@@ -75,6 +76,11 @@ export async function runCapture(options: CaptureOptions): Promise<number> {
   // and make sure Metro is up, otherwise every capture is just the splash.
   if (config.device.devServer) {
     await setupMetroReverse(serial, config.device.metroPort);
+    await overrideMetroHost(
+      serial,
+      config.app.packageName,
+      config.device.metroPort,
+    );
     await assertMetroRunning(config.device.metroPort);
   }
 
