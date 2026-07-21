@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../src/util/exec.js", () => ({
   run: vi.fn(async () => ({ stdout: "", stderr: "", exitCode: 0 })),
@@ -7,9 +7,8 @@ vi.mock("../src/util/exec.js", () => ({
   waitFor: vi.fn(),
 }));
 
-const { setupMetroReverse, assertMetroRunning } = await import(
-  "../src/capture/device.js"
-);
+const { setupMetroReverse, assertMetroRunning, overrideMetroHost } =
+  await import("../src/capture/device.js");
 const { run } = await import("../src/util/exec.js");
 
 describe("setupMetroReverse", () => {
@@ -22,6 +21,49 @@ describe("setupMetroReverse", () => {
       "tcp:8081",
       "tcp:8081",
     ]);
+  });
+});
+
+describe("overrideMetroHost", () => {
+  beforeEach(() => {
+    vi.mocked(run).mockClear();
+  });
+
+  it("creates shared_prefs and writes debug_http_host via run-as", async () => {
+    await overrideMetroHost("emulator-5554", "com.example.myapp", 8081);
+
+    expect(run).toHaveBeenNthCalledWith(1, "adb", [
+      "-s",
+      "emulator-5554",
+      "shell",
+      "run-as",
+      "com.example.myapp",
+      "mkdir",
+      "-p",
+      "shared_prefs",
+    ]);
+
+    expect(run).toHaveBeenNthCalledWith(
+      2,
+      "adb",
+      [
+        "-s",
+        "emulator-5554",
+        "shell",
+        'run-as com.example.myapp sh -c "cat > shared_prefs/com.example.myapp_preferences.xml"',
+      ],
+      {
+        input: expect.stringContaining(
+          '<string name="debug_http_host">localhost:8081</string>',
+        ),
+      },
+    );
+  });
+
+  it("rejects a package name with unsafe characters", async () => {
+    await expect(
+      overrideMetroHost("emulator-5554", 'com.example."; rm -rf /', 8081),
+    ).rejects.toThrow(/Invalid app\.packageName/);
   });
 });
 
