@@ -6,10 +6,10 @@ import type { z } from "zod";
 import { type Config, configSchema } from "./schema.js";
 
 const DEFAULT_BASENAMES = [
-  "screenshots.config.ts",
-  "screenshots.config.js",
-  "screenshots.config.mjs",
-  "screenshots.config.json",
+  "vitrine.config.ts",
+  "vitrine.config.js",
+  "vitrine.config.mjs",
+  "vitrine.config.json",
 ];
 
 export interface LoadedConfig {
@@ -88,6 +88,7 @@ function withResolvedPaths(config: Config, configDir: string): Config {
   const abs = (p: string) => (isAbsolute(p) ? p : resolve(configDir, p));
   return {
     ...config,
+    screenshotsDir: abs(config.screenshotsDir),
     app: {
       ...config.app,
       apkPath: config.app.apkPath ? abs(config.app.apkPath) : undefined,

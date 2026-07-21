@@ -53,6 +53,11 @@ export const configSchema = z.object({
     /** Images only today; reserved for clarity. */
     track: z.string().default("listing"),
   }),
+  /** Base dir for capture/frame output */
+  screenshotsDir: z
+    .string()
+    .min(1, "screenshotsDir must not be empty")
+    .default(".vitrine/screenshots"),
   screens: z
     .array(screenSchema)
     .min(1, "at least one screen is required")
@@ -78,7 +83,7 @@ export type Config = z.output<typeof configSchema>;
 
 /**
  * Identity helper that gives editor autocompletion / type-checking to a
- * `screenshots.config.ts`. Validation happens at load time via {@link configSchema}.
+ * `vitrine.config.ts`. Validation happens at load time via {@link configSchema}.
  */
 export function defineConfig(config: ConfigInput): ConfigInput {
   return config;

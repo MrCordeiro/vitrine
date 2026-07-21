@@ -11,9 +11,9 @@ no design tool, no fastlane.
 ## How it works
 
 ```txt
-screenshots.config.ts ──► vitrine capture ──► screenshots/raw/*.png
-                          vitrine frame   ──► screenshots/framed/*.png   (soon)
-                          vitrine publish ──► Google Play listing        (soon)
+vitrine.config.ts ──► vitrine capture ──► .vitrine/screenshots/raw/*.png
+                          vitrine frame   ──► .vitrine/screenshots/framed/*.png   (soon)
+                          vitrine publish ──► Google Play listing               (soon)
 ```
 
 Each command is independently runnable and shares one config file.
@@ -41,7 +41,7 @@ npm install --save-dev ../vitrine/vitrine-0.1.0.tgz
 
 ## Configure
 
-Create `screenshots.config.ts` at your app repo root (see `example/` here for a
+Create `vitrine.config.ts` at your app repo root (see `example/` here for a
 complete sample):
 
 ```ts
@@ -68,14 +68,24 @@ export default defineConfig({
     serviceAccountKeyPath: "./secrets/play-service-account.json",
     track: "listing",
   },
+  screenshotsDir: ".vitrine/screenshots", // optional; this is the default
   screens: [
-    { id: "home", flow: "flows/home.yaml", caption: "Track everything in one place" },
-    { id: "profile", flow: "flows/profile.yaml", caption: "Your data, your way" },
+    { id: "home", flow: ".vitrine/flows/home.yaml", caption: "Track everything in one place" },
+    { id: "profile", flow: ".vitrine/flows/profile.yaml", caption: "Your data, your way" },
   ],
 });
 ```
 
 `.ts`, `.js`, `.mjs`, and `.json` config files are all supported.
+
+Flows and generated screenshots both live under `.vitrine/` at your repo
+root — a dedicated namespace so vitrine never collides with folders your app
+already owns. `.vitrine/flows/` is authored and should be committed;
+`.vitrine/screenshots/` is generated output and should be gitignored:
+
+```gitignore
+.vitrine/screenshots/
+```
 
 ## Writing flows
 
@@ -89,7 +99,7 @@ screen in a known-good state and call `takeScreenshot` once. Two rules:
    `frame`.
 
 ```yaml
-# flows/home.yaml
+# .vitrine/flows/home.yaml
 appId: com.example.myapp
 ---
 - launchApp:
@@ -116,7 +126,7 @@ derives link paths from your file routes:
 | `app/search.tsx` | `myapp://search?q=trees` |
 
 ```yaml
-# flows/profile.yaml — reach the route directly, then capture
+# .vitrine/flows/profile.yaml — reach the route directly, then capture
 appId: com.example.myapp
 ---
 - launchApp:
@@ -141,7 +151,7 @@ Notes:
 - Add `waitForAnimationToEnd` before `takeScreenshot` if a screen animates in, so
   captures are pixel-stable.
 
-See `example/flows/` for deep-link (`profile.yaml`), nested-route (`settings.yaml`),
+See `example/.vitrine/flows/` for deep-link (`profile.yaml`), nested-route (`settings.yaml`),
 and launch-based (`home.yaml`) variants.
 
 ## Capture
@@ -150,7 +160,7 @@ and launch-based (`home.yaml`) variants.
 npx vitrine capture                       # capture every configured screen
 npx vitrine capture --only home,profile   # capture a subset
 npx vitrine capture --serial emulator-5554  # target a specific device
-npx vitrine capture --config ./path/to/screenshots.config.ts
+npx vitrine capture --config ./path/to/vitrine.config.ts
 ```
 
 What it does:
@@ -162,7 +172,7 @@ What it does:
    is already installed.
 4. For a dev build (`device.devServer: true`), forwards the Metro port with
    `adb reverse` and verifies Metro is running (see below).
-5. Runs each screen's flow in config order, writing `screenshots/raw/<id>.png`.
+5. Runs each screen's flow in config order, writing `.vitrine/screenshots/raw/<id>.png`.
 6. Prints a summary table and exits non-zero if any screen failed.
 
 Capture works against **any installed build** — never a production build.

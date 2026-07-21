@@ -1,4 +1,4 @@
-import { dirname, isAbsolute, join } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "../src/config/load.js";
@@ -26,6 +26,7 @@ describe("configSchema", () => {
     expect(parsed.frame.font).toBe("Inter");
     expect(parsed.publish.track).toBe("listing");
     expect(parsed.screens[0]?.caption).toBe("");
+    expect(parsed.screenshotsDir).toBe(".vitrine/screenshots");
   });
 
   it("accepts a solid background color", () => {
@@ -97,6 +98,26 @@ describe("loadConfig", () => {
     expect(apkPath && isAbsolute(apkPath)).toBeTruthy();
     expect(isAbsolute(config.publish.serviceAccountKeyPath)).toBe(true);
     expect(configPath).toBe(join(fixtures, "valid.config.json"));
+
+    // screenshotsDir defaults to a namespace under .vitrine and resolves
+    // against the config file's directory, not process.cwd().
+    expect(config.screenshotsDir).toBe(join(fixtures, ".vitrine/screenshots"));
+  });
+
+  it("resolves an overridden screenshotsDir against configDir, not cwd", async () => {
+    const cwdBefore = process.cwd();
+    process.chdir(here); // deliberately different from `fixtures`
+    try {
+      const { config } = await loadConfig(join(fixtures, "valid.config.json"));
+      expect(config.screenshotsDir).not.toBe(
+        resolve(cwdBefore, ".vitrine/screenshots"),
+      );
+      expect(config.screenshotsDir).toBe(
+        join(fixtures, ".vitrine/screenshots"),
+      );
+    } finally {
+      process.chdir(cwdBefore);
+    }
   });
 
   it("loads a TypeScript config via jiti", async () => {

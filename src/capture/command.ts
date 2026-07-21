@@ -19,8 +19,6 @@ export interface CaptureOptions {
   only?: string;
   /** Target device serial (`--serial`). */
   serial?: string;
-  /** Base output directory; defaults to `<cwd>/screenshots`. */
-  outDir?: string;
 }
 
 /**
@@ -84,7 +82,7 @@ export async function runCapture(options: CaptureOptions): Promise<number> {
     await assertMetroRunning(config.device.metroPort);
   }
 
-  const rawDir = resolve(options.outDir ?? "screenshots", "raw");
+  const rawDir = resolve(config.screenshotsDir, "raw");
   const results: CaptureResult[] = [];
 
   for (const screen of screens) {

@@ -17,19 +17,19 @@ Updating the Google Play listing for our React Native (Expo) Android app is manu
 - **iOS / App Store Connect** — Android only; the app is Android-only today.
 - **Localization** — single locale (`en-US`) hardcoded as a config default; the config schema should carry a `locale` field so multi-locale is additive later.
 - **CI integration** — local-first. No GitHub Actions work in v0.
-- **AI diff-discovery** (reading git diffs to find new screens) — this is the eventual differentiator but layers on top of the deterministic core. Do not build it; do not block it architecturally. The AI layer will work by editing `screenshots.config.ts` and Maestro flows, so keeping config as the single source of truth is the only architectural requirement.
+- **AI diff-discovery** (reading git diffs to find new screens) — this is the eventual differentiator but layers on top of the deterministic core. Do not build it; do not block it architecturally. The AI layer will work by editing `vitrine.config.ts` and Maestro flows, so keeping config as the single source of truth is the only architectural requirement.
 - **Full design editor** — 2–3 fixed layout templates only. No per-pixel positioning.
 - **APK building/uploading** — the tool never builds or uploads app binaries, only listing images.
 
 ## Architecture Overview
 
-TypeScript CLI package, Node 20+, developed in its **own standalone repo** (not inside the app repo — Metro's upward `node_modules` resolution and file watching conflict with nested packages, and a separate repo matches the goal of publishing to npm). The app repo is the first consumer: it holds only `screenshots.config.ts`, `flows/`, the gitignored `secrets/`, and its instantiation of the infra module, and installs the tool as a dev dependency (via `npm pack` tarball until published).
+TypeScript CLI package, Node 20+, developed in its **own standalone repo** (not inside the app repo — Metro's upward `node_modules` resolution and file watching conflict with nested packages, and a separate repo matches the goal of publishing to npm). The app repo is the first consumer: it holds only `vitrine.config.ts`, `.vitrine/` (flows and generated screenshots), the gitignored `secrets/`, and its instantiation of the infra module, and installs the tool as a dev dependency (via `npm pack` tarball until published). `.vitrine/` namespaces everything vitrine owns under one dedicated root so it can't collide with folder names a client app already uses.
 
 Three independent commands sharing one config file:
 
 ```
-screenshots.config.ts ──► capture ──► screenshots/raw/*.png
-                          frame   ──► screenshots/framed/*.png
+vitrine.config.ts ──► capture ──► .vitrine/screenshots/raw/*.png
+                          frame   ──► .vitrine/screenshots/framed/*.png
                           publish ──► Google Play listing
 ```
 
@@ -46,15 +46,15 @@ Each command must be independently runnable and independently useful.
 Maestro is normally used as an E2E **testing** tool (`maestro test .maestro/`, pass/fail semantics, artifacts in `~/.maestro/`). Here it is repurposed as a deterministic **navigation engine for screenshots**, which changes several conventions — implement accordingly:
 
 - **Flows are not tests.** Each flow's job is to reach one screen in a known-good state and call `takeScreenshot` once. Assertions (`assertVisible`) are used as *readiness gates* before capturing (wait until UI settled), not as the flow's purpose. A flow "passes" when its screenshot exists.
-- **The CLI orchestrates, not Maestro.** We do not run `maestro test` on a directory. The CLI invokes flows individually, in config order, so it can map outputs to screen ids, support `--only`, and produce a per-screen summary. Config (`screenshots.config.ts`) is the source of truth for *which* flows run — not the filesystem.
-- **Output location is ours.** Screenshots must land in `screenshots/raw/<id>.png` (use `maestro test --output` / `working-dir` control or move artifacts post-run), never left in Maestro's default artifact directory. The `takeScreenshot` name ↔ screen `id` convention is validated by the CLI.
+- **The CLI orchestrates, not Maestro.** We do not run `maestro test` on a directory. The CLI invokes flows individually, in config order, so it can map outputs to screen ids, support `--only`, and produce a per-screen summary. Config (`vitrine.config.ts`) is the source of truth for *which* flows run — not the filesystem.
+- **Output location is ours.** Screenshots must land in `.vitrine/screenshots/raw/<id>.png` (use `maestro test --output` / `working-dir` control or move artifacts post-run), never left in Maestro's default artifact directory. The `takeScreenshot` name ↔ screen `id` convention is validated by the CLI.
 - **Determinism over coverage.** Standard Maestro suites tolerate flakiness with retries and test many paths. Re-runs produce visually identical screens — this feeds the golden-image pipeline.
 - **Device lifecycle is managed by the CLI**, not by the developer or Maestro Cloud: detect running emulator via `adb devices`, boot the configured AVD when absent, install the APK if `apkPath` is set. No Maestro Cloud / hosted execution in v0.
 - **App state, not app build.** Flows run against whatever build is installed (dev client or old APK). Nothing in the Maestro layer may assume a fresh production build.
 
 ## Config Schema (source of truth)
 
-Example `screenshots.config.ts` the tool must support:
+Example `vitrine.config.ts` the tool must support:
 
 ```ts
 import { defineConfig } from "vitrine";
@@ -78,22 +78,25 @@ export default defineConfig({
     serviceAccountKeyPath: "./secrets/play-service-account.json",
     track: "listing",            // images only; field reserved for clarity
   },
+  screenshotsDir: ".vitrine/screenshots", // optional; this is the default
   screens: [
     {
       id: "home",
-      flow: "flows/home.yaml",   // Maestro flow that ends on the target screen
+      flow: ".vitrine/flows/home.yaml",   // Maestro flow that ends on the target screen
       caption: "Track everything in one place",
     },
     {
       id: "profile",
-      flow: "flows/profile.yaml",
+      flow: ".vitrine/flows/profile.yaml",
       caption: "Your data, your way",
     },
   ],
 });
 ```
 
-Example Maestro flow (`flows/home.yaml`):
+`screenshotsDir` (optional, defaults to `.vitrine/screenshots`) is where `capture`/`frame`/`publish` read and write generated output (`<screenshotsDir>/raw/<id>.png`, `<screenshotsDir>/framed/<id>.png`); it's resolved relative to the config file, same as `flow` and `apkPath`. Override it only if `.vitrine/` itself collides with something in the client repo.
+
+Example Maestro flow (`.vitrine/flows/home.yaml`):
 
 ```yaml
 appId: com.example.myapp
@@ -110,17 +113,18 @@ Convention: each flow's `takeScreenshot` name must match the screen `id`. `captu
 
 ### P0 — `capture`
 
-- [ ] Reads and zod-validates config; fails with human-readable errors on invalid config.
-- [ ] Detects a running emulator via `adb devices`; if none, boots the configured AVD and waits for boot completion.
-- [ ] If `apkPath` is set, installs it (`adb install -r`); otherwise verifies the package is installed and errors helpfully if not.
-- [ ] Runs each screen's Maestro flow sequentially; collects PNGs into `screenshots/raw/<id>.png`.
+- [x] Reads and zod-validates config; fails with human-readable errors on invalid config.
+- [x] Detects a running emulator via `adb devices`; if none, boots the configured AVD and waits for boot completion.
+- [x] If `apkPath` is set, installs it (`adb install -r`); otherwise verifies the package is installed and errors helpfully if not.
+- [x] Runs each screen's Maestro flow sequentially; collects PNGs into `.vitrine/screenshots/raw/<id>.png`.
 - [ ] `--only <id,id>` flag to capture a subset.
 - [ ] Non-zero exit code and a summary table (captured / failed) at the end.
+- [ ] Agents can easily troubleshoot and update failing flows.
 
 ### P0 — `frame`
 
-- [ ] Composites each `screenshots/raw/<id>.png` into a store-ready image: device bezel overlay, background (solid or 2-stop linear gradient), caption text above the device.
-- [ ] Output: `screenshots/framed/<id>.png` at **1080×1920 (9:16)**, PNG, under Play's 8 MB limit.
+- [ ] Composites each `.vitrine/screenshots/raw/<id>.png` into a store-ready image: device bezel overlay, background (solid or 2-stop linear gradient), caption text above the device.
+- [ ] Output: `.vitrine/screenshots/framed/<id>.png` at **1080×1920 (9:16)**, PNG, under Play's 8 MB limit.
 - [ ] Three templates: `gradient` (caption top, device centered-bottom, gradient bg), `solid` (same layout, flat bg), `minimal` (no bezel, subtle shadow, caption top).
 - [ ] Bundle one open-license font (e.g. Inter) and one generic Android bezel asset in the package; render text with sharp's SVG compositing so output is deterministic across machines.
 - [ ] Idempotent: re-running produces byte-identical output for identical inputs (required for golden tests).
@@ -135,7 +139,7 @@ Convention: each flow's `takeScreenshot` name must match the screen `id`. `captu
 
 ### P1
 
-- [ ] `vitrine init` — scaffolds config, `flows/` with one example, `.gitignore` entry for secrets.
+- [ ] `vitrine init` — scaffolds config, `.vitrine/flows/` with one example, `.gitignore` entries for `secrets/` and `.vitrine/screenshots/` (generated output).
 - [ ] `capture --serial <device>` to target a specific device/emulator.
 - [ ] Feature graphic (1024×500) generation from the same frame templates.
 - [ ] Progress/spinner output (`ora` or similar).

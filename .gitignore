@@ -3,7 +3,7 @@ dist/
 coverage/
 
 # Capture/frame output
-screenshots/
+.vitrine/screenshots/
 
 # Play publishing credentials (never commit)
 secrets/

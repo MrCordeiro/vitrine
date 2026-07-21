@@ -28,17 +28,17 @@ export default defineConfig({
   screens: [
     {
       id: "home",
-      flow: "flows/home.yaml",
+      flow: ".vitrine/flows/home.yaml",
       caption: "Track everything in one place",
     },
     {
       id: "profile",
-      flow: "flows/profile.yaml",
+      flow: ".vitrine/flows/profile.yaml",
       caption: "Your data, your way",
     },
     {
       id: "settings",
-      flow: "flows/settings.yaml",
+      flow: ".vitrine/flows/settings.yaml",
       caption: "Make it yours",
     },
   ],
